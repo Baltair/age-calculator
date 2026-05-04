@@ -1,4 +1,4 @@
-name = "age-calculator-worker"
+name = "age"
 main = "src/index.js"
 compatibility_date = "2024-04-01"
 
