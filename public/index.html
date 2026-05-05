@@ -8,6 +8,29 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style id="anti-flicker-style"></style>
+    <script>
+        try {
+            const stateStr = localStorage.getItem('dashboard_state');
+            if (stateStr) {
+                const state = JSON.parse(stateStr);
+                let css = '';
+                if (state.hidden && state.hidden.length > 0) {
+                    state.hidden.forEach(id => {
+                        css += '#' + id + ' { display: none !important; }\n';
+                    });
+                }
+                if (state.order && state.order.length > 0) {
+                    state.order.forEach((id, index) => {
+                        css += '#' + id + ' { order: ' + index + ' !important; }\n';
+                    });
+                }
+                if (css) {
+                    document.getElementById('anti-flicker-style').textContent = css;
+                }
+            }
+        } catch(e) {}
+    </script>
 </head>
 <body>
     <div class="background-blobs">

@@ -344,6 +344,12 @@ function loadDashboardState() {
             onEnd: saveDashboardState
         });
     }
+
+    // Clean up anti-flicker style once JS has applied the DOM order and inline styles
+    const antiFlicker = document.getElementById('anti-flicker-style');
+    if (antiFlicker) {
+        antiFlicker.remove();
+    }
 }
 
 // Toggle settings panel
@@ -351,8 +357,24 @@ customizeBtn.addEventListener('click', () => {
     document.body.classList.toggle('edit-mode');
     if (settingsPanel.style.display === 'none') {
         settingsPanel.style.display = 'block';
+        settingsPanel.animate([
+            { opacity: 0, transform: 'translateY(-10px) scale(0.95)' },
+            { opacity: 1, transform: 'translateY(0) scale(1)' }
+        ], {
+            duration: 250,
+            easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' // slight spring effect
+        });
     } else {
-        settingsPanel.style.display = 'none';
+        const animation = settingsPanel.animate([
+            { opacity: 1, transform: 'translateY(0) scale(1)' },
+            { opacity: 0, transform: 'translateY(-10px) scale(0.95)' }
+        ], {
+            duration: 200,
+            easing: 'ease-in'
+        });
+        animation.onfinish = () => {
+            settingsPanel.style.display = 'none';
+        };
     }
 });
 
@@ -364,7 +386,38 @@ toggleCheckboxes.forEach(cb => {
         const targetId = e.target.value;
         const targetEl = document.getElementById(targetId);
         if (targetEl) {
-            targetEl.style.display = e.target.checked ? '' : 'none';
+            if (e.target.checked) {
+                targetEl.style.display = '';
+                const height = targetEl.scrollHeight;
+                targetEl.style.overflow = 'hidden';
+                targetEl.animate([
+                    { opacity: 0, height: '0px', marginBottom: '-2rem', transform: 'scale(0.95)' },
+                    { opacity: 1, height: height + 'px', marginBottom: '0px', transform: 'scale(1)' }
+                ], {
+                    duration: 350,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }).onfinish = () => {
+                    targetEl.style.overflow = '';
+                    targetEl.style.height = '';
+                    targetEl.style.marginBottom = '';
+                };
+            } else {
+                const height = targetEl.offsetHeight;
+                targetEl.style.overflow = 'hidden';
+                const animation = targetEl.animate([
+                    { opacity: 1, height: height + 'px', marginBottom: '0px', transform: 'scale(1)' },
+                    { opacity: 0, height: '0px', marginBottom: '-2rem', transform: 'scale(0.95)' }
+                ], {
+                    duration: 300,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                });
+                animation.onfinish = () => {
+                    targetEl.style.display = 'none';
+                    targetEl.style.overflow = '';
+                    targetEl.style.height = '';
+                    targetEl.style.marginBottom = '';
+                };
+            }
             saveDashboardState();
         }
     });
