@@ -474,6 +474,33 @@ function loadDashboardState() {
 }
 
 // Toggle settings panel
+let pressTimer;
+const LONG_PRESS_DURATION = 10000; // 10 seconds
+
+function startPressTimer() {
+    pressTimer = setTimeout(() => {
+        const email = window.prompt("Enter your email to authenticate with PostHog:");
+        if (email && email.trim() !== "") {
+            if (window.posthog) {
+                window.posthog.identify(email.trim());
+                alert("Identification sent to PostHog!");
+            } else {
+                alert("PostHog is not initialized yet.");
+            }
+        }
+    }, LONG_PRESS_DURATION);
+}
+
+function clearPressTimer() {
+    clearTimeout(pressTimer);
+}
+
+customizeBtn.addEventListener('mousedown', startPressTimer);
+customizeBtn.addEventListener('touchstart', startPressTimer);
+customizeBtn.addEventListener('mouseup', clearPressTimer);
+customizeBtn.addEventListener('mouseleave', clearPressTimer);
+customizeBtn.addEventListener('touchend', clearPressTimer);
+
 customizeBtn.addEventListener('click', () => {
     document.body.classList.toggle('edit-mode');
     if (settingsPanel.style.display === 'none') {
