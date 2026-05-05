@@ -36,17 +36,20 @@
 html {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.15) var(--bg-color);
+    overscroll-behavior-y: none; /* Prevents rubber-band bounce on mobile */
 }
 
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-primary);
-    min-height: 100vh;
+    min-height: 100vh; /* Fallback */
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
     display: flex;
     justify-content: center;
     position: relative;
     overflow-x: hidden;
+    overscroll-behavior-y: none;
 }
 
 .background-blobs {
