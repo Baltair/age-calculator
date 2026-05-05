@@ -406,7 +406,10 @@ function loadDashboardState() {
             
             if (state.theme) {
                 document.getElementById('theme-selector').value = state.theme;
-                document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-cyberpunk', 'theme-sakura', 'theme-stealth', 'theme-royal', 'theme-aurora');
+                const themesToRemove = Array.from(document.body.classList).filter(c => c.startsWith('theme-'));
+                if (themesToRemove.length > 0) {
+                    document.body.classList.remove(...themesToRemove);
+                }
                 if (state.theme !== 'default') {
                     document.body.classList.add(`theme-${state.theme}`);
                 }
@@ -588,7 +591,10 @@ precisionCheckboxes.forEach(cb => {
 const themeSelector = document.getElementById('theme-selector');
 themeSelector.addEventListener('change', (e) => {
     const theme = e.target.value;
-    document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-cyberpunk', 'theme-sakura', 'theme-stealth', 'theme-royal', 'theme-aurora');
+    const themesToRemove = Array.from(document.body.classList).filter(c => c.startsWith('theme-'));
+    if (themesToRemove.length > 0) {
+        document.body.classList.remove(...themesToRemove);
+    }
     if (theme !== 'default') {
         document.body.classList.add(`theme-${theme}`);
     }
