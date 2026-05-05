@@ -98,6 +98,7 @@ body {
     z-index: 1;
     width: 90%;
     max-width: 800px;
+    height: fit-content;
     margin: 4rem auto;
     background: var(--card-bg);
     backdrop-filter: blur(20px);
