@@ -266,7 +266,7 @@ if (dateParam) {
 }
 
 // Check for saved date in storage
-const savedDob = sessionStorage.getItem('saved_dob');
+const savedDob = localStorage.getItem('saved_dob');
 if (savedDob && !dateParam) {
     dobInput.value = savedDob;
 }
@@ -279,7 +279,7 @@ setInterval(calculateAge, 1000);
 
 // Recalculate when input changes
 dobInput.addEventListener('input', () => {
-    sessionStorage.setItem('saved_dob', dobInput.value);
+    localStorage.setItem('saved_dob', dobInput.value);
     calculateAge();
 });
 
@@ -298,11 +298,11 @@ function saveDashboardState() {
         .map(cb => cb.value);
 
     const state = { order, hidden };
-    sessionStorage.setItem('dashboard_state', JSON.stringify(state));
+    localStorage.setItem('dashboard_state', JSON.stringify(state));
 }
 
 function loadDashboardState() {
-    const savedStateStr = sessionStorage.getItem('dashboard_state');
+    const savedStateStr = localStorage.getItem('dashboard_state');
     if (savedStateStr) {
         try {
             const state = JSON.parse(savedStateStr);
