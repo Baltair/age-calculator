@@ -25,6 +25,43 @@ const birthstoneEl = document.getElementById('birthstone');
 
 let lastCelebrationDate = null;
 
+const toggleTimeInput = document.getElementById('toggle-time-input');
+let internalDobValue = localStorage.getItem('saved_dob') || "1991-11-01T00:00";
+
+function updateTimeInputUI(isEnabled) {
+    if (isEnabled) {
+        dobInput.type = 'datetime-local';
+        document.querySelector('label[for="dob"]').textContent = "Enter your Date and Time of Birth";
+        dobInput.value = internalDobValue;
+    } else {
+        dobInput.type = 'date';
+        document.querySelector('label[for="dob"]').textContent = "Enter your Date of Birth";
+        if (internalDobValue) {
+            dobInput.value = internalDobValue.split('T')[0];
+        }
+    }
+}
+
+let isTimeInputEnabled = false;
+try {
+    const earlyStateStr = localStorage.getItem('dashboard_state');
+    if (earlyStateStr) {
+        const state = JSON.parse(earlyStateStr);
+        if (state.timeInputEnabled) isTimeInputEnabled = true;
+    }
+} catch(e) {}
+
+if (toggleTimeInput) {
+    toggleTimeInput.checked = isTimeInputEnabled;
+    toggleTimeInput.addEventListener('change', (e) => {
+        updateTimeInputUI(e.target.checked);
+        if (typeof saveDashboardState === 'function') {
+            saveDashboardState();
+        }
+    });
+}
+updateTimeInputUI(isTimeInputEnabled);
+
 function getZodiacSign(day, month) {
     const signs = [
         { name: "Capricorn ♑", day: 19, month: 1 },
@@ -84,8 +121,8 @@ function triggerCelebration() {
 }
 
 function calculateAge() {
-    const dobValue = dobInput.value;
-    if (!dobValue) {
+    const dobValue = internalDobValue;
+    if (!dobValue || !dobInput.value) {
         dateTextEl.textContent = "";
         return;
     }
@@ -250,30 +287,68 @@ function calculateAge() {
     birthstoneEl.textContent = getBirthstone(birthDate.getMonth() + 1);
 }
 
+function parseTimeParam(timeStr) {
+    if (!timeStr) return null;
+    let s = timeStr.toLowerCase().replace(/\s+/g, '');
+    let isPM = s.includes('pm');
+    let isAM = s.includes('am');
+    s = s.replace('pm', '').replace('am', '');
+    s = s.replace('h', ':');
+    let parts = s.split(':');
+    let hours = parseInt(parts[0], 10);
+    let minutes = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (isNaN(hours)) return null;
+    if (isNaN(minutes)) minutes = 0;
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+    hours = Math.max(0, Math.min(23, hours));
+    minutes = Math.max(0, Math.min(59, minutes));
+    return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+}
+
 // Check for URL query parameter
 const params = new URLSearchParams(window.location.search);
 const dateParam = params.get('date');
+const timeParam = params.get('time');
+
+let urlUpdated = false;
+let currentInternal = internalDobValue || "1991-11-01T00:00";
+let [currentDate, currentTime] = currentInternal.split('T');
+if (!currentTime) currentTime = "00:00";
+
 if (dateParam) {
     let dateString = dateParam;
-    // If it's precisely YYYY-MM-DD, force local timezone parsing
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        dateString += 'T00:00';
-    }
-    const parsedDate = new Date(dateString);
-    if (!isNaN(parsedDate.getTime())) {
-        const year = parsedDate.getFullYear();
-        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(parsedDate.getDate()).padStart(2, '0');
-        const hours = String(parsedDate.getHours()).padStart(2, '0');
-        const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
-        dobInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        currentDate = dateString;
+        urlUpdated = true;
+    } else {
+        const parsedDate = new Date(dateString);
+        if (!isNaN(parsedDate.getTime())) {
+            const year = parsedDate.getFullYear();
+            const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(parsedDate.getDate()).padStart(2, '0');
+            currentDate = `${year}-${month}-${day}`;
+            urlUpdated = true;
+        }
     }
 }
 
-// Check for saved date in storage
-const savedDob = localStorage.getItem('saved_dob');
-if (savedDob && !dateParam) {
-    dobInput.value = savedDob;
+if (timeParam) {
+    const parsedTime = parseTimeParam(timeParam);
+    if (parsedTime) {
+        currentTime = parsedTime;
+        urlUpdated = true;
+        if (toggleTimeInput) {
+            toggleTimeInput.checked = true;
+            // State is saved below when we know functions are available or we just rely on later state saves
+        }
+    }
+}
+
+if (urlUpdated) {
+    internalDobValue = `${currentDate}T${currentTime}`;
+    localStorage.setItem('saved_dob', internalDobValue);
+    updateTimeInputUI(toggleTimeInput ? toggleTimeInput.checked : false);
 }
 
 // Initial calculation
@@ -284,7 +359,17 @@ setInterval(calculateAge, 1000);
 
 // Recalculate when input changes
 dobInput.addEventListener('input', () => {
-    localStorage.setItem('saved_dob', dobInput.value);
+    const val = dobInput.value;
+    if (!val) {
+        internalDobValue = "1991-11-01T00:00";
+        updateTimeInputUI(toggleTimeInput ? toggleTimeInput.checked : false);
+    } else if (dobInput.type === 'date') {
+        const timePart = (internalDobValue && internalDobValue.includes('T')) ? internalDobValue.split('T')[1] : '00:00';
+        internalDobValue = val + 'T' + timePart;
+    } else {
+        internalDobValue = val;
+    }
+    localStorage.setItem('saved_dob', internalDobValue);
     calculateAge();
 });
 
@@ -307,8 +392,9 @@ function saveDashboardState() {
         .map(cb => cb.value);
         
     const theme = document.getElementById('theme-selector').value;
+    const timeInputEnabled = toggleTimeInput ? toggleTimeInput.checked : false;
 
-    const state = { order, hidden, hiddenPrecision, theme };
+    const state = { order, hidden, hiddenPrecision, theme, timeInputEnabled };
     localStorage.setItem('dashboard_state', JSON.stringify(state));
 }
 
@@ -320,7 +406,7 @@ function loadDashboardState() {
             
             if (state.theme) {
                 document.getElementById('theme-selector').value = state.theme;
-                document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+                document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-cyberpunk', 'theme-sakura', 'theme-stealth', 'theme-royal', 'theme-aurora');
                 if (state.theme !== 'default') {
                     document.body.classList.add(`theme-${state.theme}`);
                 }
@@ -502,7 +588,7 @@ precisionCheckboxes.forEach(cb => {
 const themeSelector = document.getElementById('theme-selector');
 themeSelector.addEventListener('change', (e) => {
     const theme = e.target.value;
-    document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+    document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-cyberpunk', 'theme-sakura', 'theme-stealth', 'theme-royal', 'theme-aurora');
     if (theme !== 'default') {
         document.body.classList.add(`theme-${theme}`);
     }
