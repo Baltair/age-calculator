@@ -6,6 +6,8 @@
     <title>Age Calculator</title>
     <meta name="description" content="A beautiful and modern age calculator based on date of birth.">
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style id="anti-flicker-style"></style>
@@ -42,22 +44,44 @@
         <header>
             <div class="header-top">
                 <h1>Age Calculator</h1>
-                <button id="customize-btn" title="Customize Dashboard">⚙️</button>
+                <div class="header-actions">
+                    <button id="share-btn" title="Share Age" style="display:none;">Share</button>
+                    <button id="customize-btn" title="Customize Dashboard">⚙️</button>
+                </div>
             </div>
             <div id="settings-panel" class="settings-panel" style="display: none;">
-                <h3>Dashboard Sections</h3>
-                <div class="settings-options">
-                    <label><input type="checkbox" class="toggle-section" value="exact-age-section" checked> Exact Age</label>
+                <div class="settings-group">
+                    <h3>Theme</h3>
+                    <select id="theme-selector" class="theme-selector">
+                        <option value="default">Midnight Purple (Default)</option>
+                        <option value="ocean">Ocean Blue</option>
+                        <option value="sunset">Sunset Orange</option>
+                        <option value="forest">Forest Green</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <h3>Time Precision</h3>
+                    <div class="settings-options">
+                        <label><input type="checkbox" class="toggle-precision" value="time-hours" checked> Show Hours</label>
+                        <label><input type="checkbox" class="toggle-precision" value="time-minutes" checked> Show Minutes</label>
+                        <label><input type="checkbox" class="toggle-precision" value="time-seconds" checked> Show Seconds</label>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3>Dashboard Sections</h3>
+                    <div class="settings-options">
+                        <label><input type="checkbox" class="toggle-section" value="exact-age-section" checked> Exact Age</label>
                     <label><input type="checkbox" class="toggle-section" value="countdown-section" checked> Next Birthday In</label>
                     <label><input type="checkbox" class="toggle-section" value="totals-section" checked> Total Time Lived</label>
                     <label><input type="checkbox" class="toggle-section" value="birth-details-section" checked> Birth Details</label>
+                </div>
                 </div>
             </div>
         </header>
         
         <section class="input-section">
-            <label for="dob">Enter your Date of Birth</label>
-            <input type="date" id="dob" value="1991-11-01">
+            <label for="dob">Enter your Date and Time of Birth</label>
+            <input type="datetime-local" id="dob" value="1991-11-01T00:00">
             <div id="date-text" class="date-text"></div>
         </section>
 
@@ -81,15 +105,15 @@
                         <span class="value" id="days">0</span>
                         <span class="label">Days</span>
                     </div>
-                    <div class="age-segment">
+                    <div class="age-segment time-hours">
                         <span class="value" id="hours">0</span>
                         <span class="label">Hours</span>
                     </div>
-                    <div class="age-segment">
+                    <div class="age-segment time-minutes">
                         <span class="value" id="minutes">0</span>
                         <span class="label">Minutes</span>
                     </div>
-                    <div class="age-segment">
+                    <div class="age-segment time-seconds">
                         <span class="value" id="seconds">0</span>
                         <span class="label">Seconds</span>
                     </div>
@@ -112,15 +136,15 @@
                             <span class="value" id="bday-days">0</span>
                             <span class="label">Days</span>
                         </div>
-                        <div class="countdown-segment">
+                        <div class="countdown-segment time-hours">
                             <span class="value" id="bday-hours">0</span>
                             <span class="label">Hours</span>
                         </div>
-                        <div class="countdown-segment">
+                        <div class="countdown-segment time-minutes">
                             <span class="value" id="bday-minutes">0</span>
                             <span class="label">Minutes</span>
                         </div>
-                        <div class="countdown-segment">
+                        <div class="countdown-segment time-seconds">
                             <span class="value" id="bday-seconds">0</span>
                             <span class="label">Seconds</span>
                         </div>
@@ -150,15 +174,15 @@
                         <span class="label">Total Days</span>
                         <span class="value" id="total-days">0</span>
                     </div>
-                    <div class="total-item">
+                    <div class="total-item time-hours">
                         <span class="label">Total Hours</span>
                         <span class="value" id="total-hours">0</span>
                     </div>
-                    <div class="total-item">
+                    <div class="total-item time-minutes">
                         <span class="label">Total Minutes</span>
                         <span class="value" id="total-minutes">0</span>
                     </div>
-                    <div class="total-item">
+                    <div class="total-item time-seconds">
                         <span class="label">Total Seconds</span>
                         <span class="value" id="total-seconds">0</span>
                     </div>
@@ -191,5 +215,14 @@
     <script src="confetti.browser.js"></script>
     <script src="Sortable.min.js"></script>
     <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

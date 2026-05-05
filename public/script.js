@@ -90,14 +90,17 @@ function calculateAge() {
         return;
     }
 
-    // Use local time, but at midnight for the birth date to avoid timezone offset issues initially.
-    // However, input type="date" sets time to UTC midnight, but we'll parse it such that it represents midnight in the local timezone
-    const [year, month, day] = dobValue.split('-');
-    const birthDate = new Date(year, month - 1, day);
+    let birthDate;
+    if (dobValue.includes('T')) {
+        birthDate = new Date(dobValue);
+    } else {
+        const [year, month, day] = dobValue.split('-');
+        birthDate = new Date(year, month - 1, day);
+    }
     const now = new Date();
 
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    dateTextEl.textContent = birthDate.toLocaleDateString(undefined, options);
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+    dateTextEl.textContent = birthDate.toLocaleString(undefined, options);
 
     if (birthDate > now) {
         yearsEl.textContent = "0";
@@ -254,14 +257,16 @@ if (dateParam) {
     let dateString = dateParam;
     // If it's precisely YYYY-MM-DD, force local timezone parsing
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        dateString += 'T00:00:00';
+        dateString += 'T00:00';
     }
     const parsedDate = new Date(dateString);
     if (!isNaN(parsedDate.getTime())) {
         const year = parsedDate.getFullYear();
         const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
         const day = String(parsedDate.getDate()).padStart(2, '0');
-        dobInput.value = `${year}-${month}-${day}`;
+        const hours = String(parsedDate.getHours()).padStart(2, '0');
+        const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
+        dobInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
     }
 }
 
@@ -288,6 +293,7 @@ const sortableContainer = document.getElementById('sortable-container');
 const customizeBtn = document.getElementById('customize-btn');
 const settingsPanel = document.getElementById('settings-panel');
 const toggleCheckboxes = document.querySelectorAll('.toggle-section');
+const precisionCheckboxes = document.querySelectorAll('.toggle-precision');
 
 let sortableInstance;
 
@@ -296,8 +302,13 @@ function saveDashboardState() {
     const hidden = Array.from(toggleCheckboxes)
         .filter(cb => !cb.checked)
         .map(cb => cb.value);
+    const hiddenPrecision = Array.from(precisionCheckboxes)
+        .filter(cb => !cb.checked)
+        .map(cb => cb.value);
+        
+    const theme = document.getElementById('theme-selector').value;
 
-    const state = { order, hidden };
+    const state = { order, hidden, hiddenPrecision, theme };
     localStorage.setItem('dashboard_state', JSON.stringify(state));
 }
 
@@ -306,6 +317,14 @@ function loadDashboardState() {
     if (savedStateStr) {
         try {
             const state = JSON.parse(savedStateStr);
+            
+            if (state.theme) {
+                document.getElementById('theme-selector').value = state.theme;
+                document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+                if (state.theme !== 'default') {
+                    document.body.classList.add(`theme-${state.theme}`);
+                }
+            }
             
             // Reorder elements
             if (state.order && state.order.length > 0) {
@@ -326,6 +345,19 @@ function loadDashboardState() {
                         cb.checked = true;
                         const targetEl = document.getElementById(cb.value);
                         if (targetEl) targetEl.style.display = '';
+                    }
+                });
+            }
+            
+            // Restore hidden precision state
+            if (state.hiddenPrecision) {
+                precisionCheckboxes.forEach(cb => {
+                    if (state.hiddenPrecision.includes(cb.value)) {
+                        cb.checked = false;
+                        document.body.classList.add('hide-' + cb.value);
+                    } else {
+                        cb.checked = true;
+                        document.body.classList.remove('hide-' + cb.value);
                     }
                 });
             }
@@ -422,6 +454,78 @@ toggleCheckboxes.forEach(cb => {
         }
     });
 });
+
+function setPrecisionState(targetClass, isChecked) {
+    const cb = document.querySelector(`input[value="${targetClass}"]`);
+    if (cb && cb.checked !== isChecked) {
+        cb.checked = isChecked;
+        if (isChecked) {
+            document.body.classList.remove('hide-' + targetClass);
+        } else {
+            document.body.classList.add('hide-' + targetClass);
+        }
+    }
+}
+
+// Checkboxes for precision in settings panel
+precisionCheckboxes.forEach(cb => {
+    cb.addEventListener('change', (e) => {
+        const targetClass = e.target.value;
+        const isChecked = e.target.checked;
+        
+        if (isChecked) {
+            document.body.classList.remove('hide-' + targetClass);
+        } else {
+            document.body.classList.add('hide-' + targetClass);
+        }
+
+        // Cascade logic
+        if (targetClass === 'time-seconds' && isChecked) {
+            setPrecisionState('time-minutes', true);
+            setPrecisionState('time-hours', true);
+        } else if (targetClass === 'time-minutes') {
+            if (isChecked) {
+                setPrecisionState('time-hours', true);
+            } else {
+                setPrecisionState('time-seconds', false);
+            }
+        } else if (targetClass === 'time-hours' && !isChecked) {
+            setPrecisionState('time-minutes', false);
+            setPrecisionState('time-seconds', false);
+        }
+
+        saveDashboardState();
+    });
+});
+
+// Theme Selector
+const themeSelector = document.getElementById('theme-selector');
+themeSelector.addEventListener('change', (e) => {
+    const theme = e.target.value;
+    document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+    if (theme !== 'default') {
+        document.body.classList.add(`theme-${theme}`);
+    }
+    saveDashboardState();
+});
+
+// Share Button
+const shareBtn = document.getElementById('share-btn');
+if (navigator.share) {
+    shareBtn.style.display = 'inline-block';
+    shareBtn.addEventListener('click', async () => {
+        const ageText = `I am exactly ${yearsEl.textContent} years, ${monthsEl.textContent} months, and ${daysEl.textContent} days old! Check out my exact age here:`;
+        try {
+            await navigator.share({
+                title: 'Age Calculator',
+                text: ageText,
+                url: window.location.href.split('?')[0] + '?date=' + dobInput.value,
+            });
+        } catch (err) {
+            console.log('Error sharing:', err);
+        }
+    });
+}
 
 // Initialize on load
 loadDashboardState();

@@ -1,0 +1,17 @@
+{
+  "name": "Age Calculator",
+  "short_name": "AgeCalc",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "A beautiful and modern age calculator based on date of birth.",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
